@@ -358,11 +358,11 @@
                     {dq:-1, dr:0}, {dq:0, dr:-1}, {dq:1, dr:-1}
                 ];
 
-                // Generate child vertices internally for the current radius/orientation
+                // Use cellRadius for the base boundary (hugs the cells)
                 const cv = [];
                 for(let k=0; k<6; k++) {
                     const va = k * Math.PI/3 + angleOffset;
-                    cv.push({x: Math.cos(va)*this.childRadius, y: Math.sin(va)*this.childRadius});
+                    cv.push({x: Math.cos(va)*this.cellRadius, y: Math.sin(va)*this.cellRadius});
                 }
 
                 // Deterministic Start
@@ -380,13 +380,13 @@
                 }
                 if (!startHex) return;
 
-                const path = [];
+                // First pass: collect raw boundary edges (before offset)
+                const rawEdges = [];
                 let currentHex = startHex;
                 let currentDir = startDirIndex;
                 const startKey = `${startHex.q},${startHex.r}:${startDirIndex}`;
                 let watchdog = 0;
 
-                // --- KEY FIX: ALWAYS PUSH P1 & P2. PIVOT +5 ON CONCAVE ---
                 do {
                     const vStartIdx = currentDir;
                     const vEndIdx = (currentDir + 1) % 6;
@@ -394,28 +394,75 @@
                     const pStart = { x: currentHex.x + cv[vStartIdx].x, y: currentHex.y + cv[vStartIdx].y };
                     const pEnd = { x: currentHex.x + cv[vEndIdx].x, y: currentHex.y + cv[vEndIdx].y };
 
-                    // 1. Always add the wall segment (fills the gaps)
-                    path.push(pStart);
-                    path.push(pEnd);
+                    rawEdges.push({ p1: pStart, p2: pEnd });
                     
-                    // 2. Determine next direction
+                    // Determine next direction
                     const nextDir = (currentDir + 1) % 6;
                     const neighborKey = getKey(currentHex.q + dirs[nextDir].dq, currentHex.r + dirs[nextDir].dr);
                     
                     if (activeSet.has(neighborKey)) {
-                        // Concave: Bridge Logic (Pivot +5)
-                        // Switch to neighbor, turn "left" relative to edge
                         const nq = currentHex.q + dirs[nextDir].dq;
                         const nr = currentHex.r + dirs[nextDir].dr;
                         currentHex = this.children.find(c => c.q === nq && c.r === nr);
                         currentDir = (currentDir + 5) % 6; 
                     } else {
-                        // Convex: Wall Follow (Pivot +1)
-                        // Stay on current hex, turn "right" relative to edge
                         currentDir = (currentDir + 1) % 6;
                     }
                     watchdog++;
                 } while (watchdog < 10000 && !(`${currentHex.q},${currentHex.r}:${currentDir}` === startKey));
+
+                if (rawEdges.length === 0) return;
+
+                // Calculate offset amount (half padding on each side = full padding for boundary)
+                const offsetAmount = this.cellRadius - this.childRadius;
+
+                // Second pass: offset each edge outward and find intersections
+                const offsetEdges = rawEdges.map(edge => {
+                    // Calculate edge direction and normal
+                    const dx = edge.p2.x - edge.p1.x;
+                    const dy = edge.p2.y - edge.p1.y;
+                    const len = Math.sqrt(dx * dx + dy * dy);
+                    
+                    // Outward normal (perpendicular, pointing outward from the shape)
+                    // For CCW winding, outward is to the right of the edge direction
+                    const nx = dy / len;
+                    const ny = -dx / len;
+                    
+                    // Offset both points along the normal
+                    return {
+                        p1: { x: edge.p1.x + nx * offsetAmount, y: edge.p1.y + ny * offsetAmount },
+                        p2: { x: edge.p2.x + nx * offsetAmount, y: edge.p2.y + ny * offsetAmount }
+                    };
+                });
+
+                // Helper: find intersection of two lines defined by points
+                const lineIntersection = (e1, e2) => {
+                    const x1 = e1.p1.x, y1 = e1.p1.y, x2 = e1.p2.x, y2 = e1.p2.y;
+                    const x3 = e2.p1.x, y3 = e2.p1.y, x4 = e2.p2.x, y4 = e2.p2.y;
+                    
+                    const denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+                    if (Math.abs(denom) < 0.0001) {
+                        // Lines are parallel, use midpoint of the endpoints
+                        return { x: (e1.p2.x + e2.p1.x) / 2, y: (e1.p2.y + e2.p1.y) / 2 };
+                    }
+                    
+                    const t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / denom;
+                    return {
+                        x: x1 + t * (x2 - x1),
+                        y: y1 + t * (y2 - y1)
+                    };
+                };
+
+                // Build final path by finding intersections between consecutive offset edges
+                const path = [];
+                for (let i = 0; i < offsetEdges.length; i++) {
+                    const currEdge = offsetEdges[i];
+                    const nextEdge = offsetEdges[(i + 1) % offsetEdges.length];
+                    
+                    // Find intersection point between current edge and next edge
+                    const intersection = lineIntersection(currEdge, nextEdge);
+                    path.push(intersection);
+                }
                 
                 this.boundaryPath = path;
             }
