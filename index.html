@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hexagon Packer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        canvas { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+        /* Toggle Switch Styles */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #2dd4bf;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #2dd4bf;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-200 min-h-screen flex flex-col md:flex-row">
+
+    <!-- Sidebar / Controls -->
+    <div class="w-full md:w-80 bg-slate-800 p-6 flex flex-col gap-6 shadow-xl z-10 border-r border-slate-700 overflow-y-auto shrink-0">
+        <div>
+            <h1 class="text-2xl font-bold text-teal-400 mb-1">Hexagon Packer</h1>
+        </div>
+
+        <!-- Controls -->
+        <div class="space-y-4">
+            
+            <!-- Units -->
+            <div>
+                <label class="block text-sm font-medium text-slate-300 mb-1">Units</label>
+                <select id="unitSelect" class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 focus:outline-none focus:border-teal-500 text-sm">
+                    <option value="px">Pixels (px)</option>
+                    <option value="mm">Millimeters (mm)</option>
+                    <option value="cm">Centimeters (cm)</option>
+                    <option value="in">Inches (in)</option>
+                </select>
+            </div>
+
+            <!-- Parent Size -->
+            <div>
+                <label class="block text-sm font-medium text-slate-300 mb-1">Parent Edge Length (<span class="unit-label">px</span>)</label>
+                <input type="number" id="parentSize" value="300" min="1" step="0.1" 
+                    class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 focus:outline-none focus:border-teal-500 transition-colors">
+            </div>
+
+            <!-- Parent Orientation -->
+            <div>
+                <label class="block text-sm font-medium text-slate-300 mb-2">Parent Orientation</label>
+                <div class="flex items-center gap-3">
+                    <span class="text-xs text-slate-400">Pointy</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="parentOrientationToggle" class="sr-only peer">
+                        <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-600"></div>
+                    </label>
+                    <span class="text-xs text-slate-400">Flat</span>
+                </div>
+            </div>
+
+            <!-- Child Orientation -->
+            <div>
+                <label class="block text-sm font-medium text-slate-300 mb-2">Child Orientation</label>
+                <div class="flex items-center gap-3">
+                    <span class="text-xs text-slate-400">Pointy</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="childOrientationToggle" class="sr-only peer">
+                        <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-600"></div>
+                    </label>
+                    <span class="text-xs text-slate-400">Flat</span>
+                </div>
+            </div>
+
+            <!-- Parent Boundary -->
+             <div>
+                <label class="block text-sm font-medium text-slate-300 mb-2">Parent Boundary</label>
+                <div class="flex items-center gap-3">
+                    <span class="text-xs text-slate-400">Simple</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="boundaryToggle" class="sr-only peer">
+                        <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-600"></div>
+                    </label>
+                    <span class="text-xs text-slate-400">Conform</span>
+                </div>
+            </div>
+
+            <!-- Density -->
+            <div>
+                <div class="flex justify-between items-end mb-1">
+                    <label class="block text-sm font-medium text-slate-300">Density (Layers)</label>
+                    <span id="densityVal" class="text-xs text-teal-400 font-mono">5</span>
+                </div>
+                <input type="range" id="density" value="5" min="1" max="50" step="1" 
+                    class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-teal-500">
+            </div>
+
+            <!-- Padding -->
+            <div>
+                <div class="flex justify-between items-end mb-1">
+                    <label class="block text-sm font-medium text-slate-300">Padding (<span class="unit-label">px</span>)</label>
+                    <span id="paddingVal" class="text-xs text-teal-400 font-mono">2</span>
+                </div>
+                <input type="range" id="padding" value="2" min="0" max="50" step="0.1" 
+                    class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-teal-500">
+            </div>
+            
+        </div>
+
+        <hr class="border-slate-700">
+
+        <!-- Readout -->
+        <div class="bg-slate-900/50 p-4 rounded-lg border border-slate-700 space-y-2">
+            <h3 class="text-sm font-semibold text-slate-300 border-b border-slate-700 pb-2 mb-2">Statistics</h3>
+            
+            <div class="flex justify-between">
+                <span class="text-xs text-slate-400">Total Count:</span>
+                <span id="statCount" class="text-sm font-mono text-white">0</span>
+            </div>
+            
+            <div class="flex justify-between">
+                <span class="text-xs text-slate-400">Child Edge:</span>
+                <span id="statEdge" class="text-sm font-mono text-white">0.00</span>
+            </div>
+
+            <div class="flex justify-between">
+                <span class="text-xs text-slate-400">Child Width:</span>
+                <span id="statWidth" class="text-sm font-mono text-white">0.00</span>
+            </div>
+        </div>
+
+        <!-- Export -->
+        <div class="mt-auto pt-4">
+            <button id="downloadBtn" class="w-full bg-teal-600 hover:bg-teal-500 text-white font-semibold py-3 px-4 rounded transition-colors flex items-center justify-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+                </svg>
+                Export SVG
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Rendering Area -->
+    <div class="flex-1 bg-slate-900 relative overflow-hidden flex items-center justify-center p-8" id="canvasContainer">
+        <!-- Background Grid Pattern -->
+        <div class="absolute inset-0 opacity-10 pointer-events-none" 
+             style="background-image: radial-gradient(#4fd1c5 1px, transparent 1px); background-size: 20px 20px;">
+        </div>
+
+        <canvas id="canvas" class="bg-slate-800 rounded shadow-2xl"></canvas>
+    </div>
+
+    <script>
+        // --- Math & Geometry Kernel ---
+        const SQRT3 = Math.sqrt(3);
+        const INTERNAL_REF = 10000; 
+        const VISUAL_BASE_SIZE = 300; 
+
+        // Helper: Check point in polygon
+        function isPointInPolygon(p, polygon) {
+            let inside = false;
+            for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+                const xi = polygon[i].x, yi = polygon[i].y;
+                const xj = polygon[j].x, yj = polygon[j].y;
+                const intersect = ((yi > p.y) !== (yj > p.y)) &&
+                    (p.x < (xj - xi) * (p.y - yi) / (yj - yi) + xi);
+                if (intersect) inside = !inside;
+            }
+            return inside;
+        }
+
+        class HexPacker {
+            constructor() {
+                this.inputs = {
+                    parentSize: document.getElementById('parentSize'),
+                    density: document.getElementById('density'),
+                    padding: document.getElementById('padding'),
+                    parentOrientation: document.getElementById('parentOrientationToggle'),
+                    childOrientation: document.getElementById('childOrientationToggle'),
+                    boundary: document.getElementById('boundaryToggle'),
+                    unit: document.getElementById('unitSelect')
+                };
+                
+                this.displays = {
+                    density: document.getElementById('densityVal'),
+                    padding: document.getElementById('paddingVal'),
+                    count: document.getElementById('statCount'),
+                    edge: document.getElementById('statEdge'),
+                    width: document.getElementById('statWidth'),
+                    unitLabels: document.querySelectorAll('.unit-label')
+                };
+
+                this.state = {};
+                this.children = [];
+                this.boundaryPath = []; 
+                this.updateState();
+            }
+
+            updateState() {
+                this.state = {
+                    userInputParent: parseFloat(this.inputs.parentSize.value) || 300,
+                    userInputPadding: parseFloat(this.inputs.padding.value) || 0,
+                    density: parseInt(this.inputs.density.value) || 1,
+                    isParentFlat: this.inputs.parentOrientation.checked,
+                    isChildFlat: this.inputs.childOrientation.checked,
+                    isConform: this.inputs.boundary.checked,
+                    unit: this.inputs.unit.value
+                };
+
+                this.displays.density.innerText = this.state.density;
+                this.displays.padding.innerText = `${this.state.userInputPadding}`;
+                this.displays.unitLabels.forEach(el => el.innerText = this.state.unit);
+
+                this.compute();
+            }
+
+            compute() {
+                const s = this.state;
+                
+                // --- Fixed Scale Logic ---
+                const paddingRatio = s.userInputPadding / VISUAL_BASE_SIZE;
+                const internalPadding = paddingRatio * INTERNAL_REF;
+
+                // 1. Define Parent Geometry (Mask)
+                const parentAngleOffset = s.isParentFlat ? 0 : -Math.PI / 6; 
+                const parentApothem = INTERNAL_REF * SQRT3 / 2;
+                const parentNormals = [];
+                const normalStart = s.isParentFlat ? Math.PI/6 : 0;
+                for(let i=0; i<6; i++) {
+                    const angle = normalStart + i * Math.PI/3;
+                    parentNormals.push({x: Math.cos(angle), y: Math.sin(angle)});
+                }
+
+                // 2. Scan & Mask Phase (Nominal Scale)
+                const density = s.density;
+                const nominalScale = INTERNAL_REF / (2 * density);
+                // FIX: Increased scan range to ensure coverage at high densities
+                const scanRange = Math.ceil(density * 3) + 5; 
+                const cluster = []; 
+
+                // Child Vertices for Containment Check (Scale 1)
+                const childVertOffset = s.isChildFlat ? 0 : -Math.PI/6;
+                const unitChildVerts = [];
+                for(let k=0; k<6; k++) {
+                    const va = k * Math.PI/3 + childVertOffset;
+                    unitChildVerts.push({x: Math.cos(va), y: Math.sin(va)});
+                }
+
+                // Scan Poly
+                const scanPoly = [];
+                const scanRef = INTERNAL_REF + 1.0;
+                for(let i=0; i<6; i++) {
+                    const angle = i * Math.PI/3 + parentAngleOffset;
+                    scanPoly.push({x: scanRef * Math.cos(angle), y: scanRef * Math.sin(angle)});
+                }
+
+                for (let q = -scanRange; q <= scanRange; q++) {
+                    for (let r = -scanRange; r <= scanRange; r++) {
+                        let cx, cy;
+                        // Child-aligned lattice
+                        if(s.isChildFlat) {
+                            cx = 1.5 * q;
+                            cy = SQRT3 * (r + q/2);
+                        } else {
+                            cx = SQRT3 * (q + r/2);
+                            cy = 1.5 * r;
+                        }
+                        
+                        let allInside = true;
+                        for(let v of unitChildVerts) {
+                            const vx = (cx + v.x) * nominalScale;
+                            const vy = (cy + v.y) * nominalScale;
+                            if(!isPointInPolygon({x:vx, y:vy}, scanPoly)) {
+                                allInside = false; break;
+                            }
+                        }
+                        if(allInside) {
+                            cluster.push({q, r, x: cx, y: cy});
+                        }
+                    }
+                }
+
+                if(cluster.length === 0) { this.setEmpty(); return; }
+
+                // 3. Maximized Fit Phase (Exact Scale)
+                const limit = parentApothem - (internalPadding / 2);
+                if (limit <= 0) { this.setEmpty(); return; }
+
+                let minScale = Infinity;
+
+                for(let hex of cluster) {
+                    for(let v of unitChildVerts) {
+                        const vx = hex.x + v.x;
+                        const vy = hex.y + v.y;
+                        for(let n of parentNormals) {
+                            const dot = vx * n.x + vy * n.y;
+                            if (dot > 0.0001) {
+                                const maxS = limit / dot;
+                                if (maxS < minScale) minScale = maxS;
+                            }
+                        }
+                    }
+                }
+
+                if (minScale === Infinity || minScale <= 0) { this.setEmpty(); return; }
+
+                // 4. Finalize
+                this.cellRadius = minScale;
+                this.childRadius = Math.max(0, minScale - (internalPadding / SQRT3));
+
+                this.visualParentPoly = [];
+                for(let i=0; i<6; i++) {
+                    const angle = i * Math.PI/3 + parentAngleOffset;
+                    this.visualParentPoly.push({
+                        x: INTERNAL_REF * Math.cos(angle),
+                        y: INTERNAL_REF * Math.sin(angle)
+                    });
+                }
+
+                this.children = cluster.map(h => ({
+                    q: h.q, r: h.r,
+                    x: h.x * minScale,
+                    y: h.y * minScale
+                }));
+
+                // 5. Boundary
+                if (s.isConform && this.children.length > 0) {
+                    this.calculateWalkedBoundary(childVertOffset);
+                } else {
+                    this.boundaryPath = [];
+                }
+
+                const scalar = s.userInputParent / INTERNAL_REF;
+                this.displays.count.innerText = this.children.length;
+                this.displays.edge.innerText = (this.childRadius * scalar).toFixed(2) + ` ${s.unit}`;
+                this.displays.width.innerText = (this.childRadius * scalar * (s.isChildFlat ? 2 : SQRT3)).toFixed(2) + ` ${s.unit}`;
+            }
+
+            setEmpty() {
+                this.children = [];
+                this.boundaryPath = [];
+                this.displays.count.innerText = 0;
+                this.displays.edge.innerText = "0.00";
+                this.displays.width.innerText = "0.00";
+            }
+
+            // --- FIXED BOUNDARY WALKER ---
+            calculateWalkedBoundary(angleOffset) {
+                const activeSet = new Set(this.children.map(c => `${c.q},${c.r}`));
+                const getKey = (q,r) => `${q},${r}`;
+
+                // Constant Axial Vectors (CCW)
+                const dirs = [
+                    {dq:1, dr:0}, {dq:0, dr:1}, {dq:-1, dr:1}, 
+                    {dq:-1, dr:0}, {dq:0, dr:-1}, {dq:1, dr:-1}
+                ];
+
+                // Generate child vertices internally for the current radius/orientation
+                const cv = [];
+                for(let k=0; k<6; k++) {
+                    const va = k * Math.PI/3 + angleOffset;
+                    cv.push({x: Math.cos(va)*this.childRadius, y: Math.sin(va)*this.childRadius});
+                }
+
+                // Deterministic Start
+                const sortedChildren = [...this.children].sort((a,b) => (a.y - b.y) || (a.x - b.x));
+                let startHex = null;
+                let startDirIndex = -1;
+
+                for (let child of sortedChildren) {
+                    for(let i=0; i<6; i++) {
+                         if(!activeSet.has(getKey(child.q + dirs[i].dq, child.r + dirs[i].dr))) {
+                             startHex = child; startDirIndex = i; break;
+                         }
+                    }
+                    if(startHex) break;
+                }
+                if (!startHex) return;
+
+                const path = [];
+                let currentHex = startHex;
+                let currentDir = startDirIndex;
+                const startKey = `${startHex.q},${startHex.r}:${startDirIndex}`;
+                let watchdog = 0;
+
+                // --- KEY FIX: ALWAYS PUSH P1 & P2. PIVOT +5 ON CONCAVE ---
+                do {
+                    const vStartIdx = currentDir;
+                    const vEndIdx = (currentDir + 1) % 6;
+                    
+                    const pStart = { x: currentHex.x + cv[vStartIdx].x, y: currentHex.y + cv[vStartIdx].y };
+                    const pEnd = { x: currentHex.x + cv[vEndIdx].x, y: currentHex.y + cv[vEndIdx].y };
+
+                    // 1. Always add the wall segment (fills the gaps)
+                    path.push(pStart);
+                    path.push(pEnd);
+                    
+                    // 2. Determine next direction
+                    const nextDir = (currentDir + 1) % 6;
+                    const neighborKey = getKey(currentHex.q + dirs[nextDir].dq, currentHex.r + dirs[nextDir].dr);
+                    
+                    if (activeSet.has(neighborKey)) {
+                        // Concave: Bridge Logic (Pivot +5)
+                        // Switch to neighbor, turn "left" relative to edge
+                        const nq = currentHex.q + dirs[nextDir].dq;
+                        const nr = currentHex.r + dirs[nextDir].dr;
+                        currentHex = this.children.find(c => c.q === nq && c.r === nr);
+                        currentDir = (currentDir + 5) % 6; 
+                    } else {
+                        // Convex: Wall Follow (Pivot +1)
+                        // Stay on current hex, turn "right" relative to edge
+                        currentDir = (currentDir + 1) % 6;
+                    }
+                    watchdog++;
+                } while (watchdog < 10000 && !(`${currentHex.q},${currentHex.r}:${currentDir}` === startKey));
+                
+                this.boundaryPath = path;
+            }
+
+            draw(canvas, ctx) {
+                const canvasSize = 800;
+                if (canvas.width !== canvasSize) { canvas.width = canvasSize; canvas.height = canvasSize; }
+                ctx.clearRect(0, 0, canvasSize, canvasSize);
+
+                const physicalSize = INTERNAL_REF * 2.2; 
+                const scale = canvasSize / physicalSize;
+
+                ctx.save();
+                ctx.translate(canvasSize/2, canvasSize/2);
+                ctx.scale(scale, scale);
+
+                ctx.beginPath();
+                if(this.state.isConform && this.boundaryPath.length > 0) {
+                    const path = this.boundaryPath;
+                    ctx.moveTo(path[0].x, path[0].y);
+                    for(let i=1; i<path.length; i++) ctx.lineTo(path[i].x, path[i].y);
+                    ctx.closePath();
+                } else {
+                    const poly = this.visualParentPoly;
+                    if(poly.length) {
+                        ctx.moveTo(poly[0].x, poly[0].y);
+                        for(let i=1; i<6; i++) ctx.lineTo(poly[i].x, poly[i].y);
+                        ctx.closePath();
+                    }
+                }
+                ctx.strokeStyle = '#2dd4bf';
+                ctx.lineWidth = 2 / scale;
+                ctx.lineJoin = 'round';
+                ctx.stroke();
+
+                if(this.childRadius > 0) {
+                    ctx.fillStyle = '#0f172a';
+                    ctx.strokeStyle = '#94a3b8';
+                    ctx.lineWidth = 1 / scale; 
+                    const angleOffset = this.state.isChildFlat ? 0 : -Math.PI/6;
+                    const cv = [];
+                    for(let i=0; i<6; i++) {
+                        const a = i*Math.PI/3 + angleOffset;
+                        cv.push({x: Math.cos(a)*this.childRadius, y: Math.sin(a)*this.childRadius});
+                    }
+                    this.children.forEach(child => {
+                        ctx.beginPath();
+                        ctx.moveTo(child.x + cv[0].x, child.y + cv[0].y);
+                        for(let i=1; i<6; i++) ctx.lineTo(child.x + cv[i].x, child.y + cv[i].y);
+                        ctx.closePath();
+                        ctx.fill();
+                        ctx.stroke();
+                    });
+                }
+                ctx.restore();
+            }
+
+            exportSVG() {
+                 const scalar = this.state.userInputParent / INTERNAL_REF;
+                 const boxSize = this.state.userInputParent * 2.2;
+                 const min = -boxSize / 2;
+                 
+                 // Calculate Visible Stroke Width (approx 0.5% of parent size)
+                 const parentW = this.state.userInputParent;
+                 const parentStroke = (parentW / 200).toFixed(3);
+                 const childStroke = (parentW / 400).toFixed(3);
+
+                 let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${min} ${min} ${boxSize} ${boxSize}" width="${boxSize}${this.state.unit}" height="${boxSize}${this.state.unit}">`;
+                 
+                 // Parent Group with Inline Attributes
+                 svg += `<g stroke="#2dd4bf" stroke-width="${parentStroke}" fill="none" stroke-linejoin="round">`;
+                 if(this.state.isConform && this.boundaryPath.length > 0) {
+                     const d = this.boundaryPath.map((p, i) => (i===0 ? 'M' : 'L') + ` ${(p.x*scalar).toFixed(3)} ${(p.y*scalar).toFixed(3)}`).join(" ") + " Z";
+                     svg += `<path d="${d}" />`;
+                 } else {
+                     const pPath = this.visualParentPoly.map(p => `${(p.x*scalar).toFixed(3)},${(p.y*scalar).toFixed(3)}`).join(" ");
+                     svg += `<polygon points="${pPath}" />`;
+                 }
+                 svg += `</g>`;
+
+                 // Children Group
+                 svg += `<g stroke="#94a3b8" stroke-width="${childStroke}" fill="none">`;
+                 
+                 const angleOffset = this.state.isChildFlat ? 0 : -Math.PI/6;
+                 this.children.forEach(child => {
+                     let pts = "";
+                     for(let i=0; i<6; i++) {
+                         const a = i*Math.PI/3 + angleOffset;
+                         const x = (child.x + Math.cos(a)*this.childRadius) * scalar;
+                         const y = (child.y + Math.sin(a)*this.childRadius) * scalar;
+                         pts += `${x.toFixed(3)},${y.toFixed(3)} `;
+                     }
+                     svg += `<polygon points="${pts.trim()}" />`;
+                 });
+
+                 svg += `</g></svg>`;
+                 return svg;
+            }
+        }
+
+        const packer = new HexPacker();
+        const canvasObj = document.getElementById('canvas');
+        const ctxObj = canvasObj.getContext('2d');
+        function loop() { packer.updateState(); packer.draw(canvasObj, ctxObj); }
+        Object.values(packer.inputs).forEach(el => { el.addEventListener('input', loop); el.addEventListener('change', loop); });
+        document.getElementById('downloadBtn').addEventListener('click', () => {
+            const content = packer.exportSVG();
+            const blob = new Blob([content], {type: 'image/svg+xml'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = `hex_pack_${packer.state.density}.svg`;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        });
+        loop();
+    </script>
+</body>
+</html>
