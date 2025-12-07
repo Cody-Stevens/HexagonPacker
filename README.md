@@ -2,7 +2,7 @@
 
 A simple browser-based tool for packing hexagons inside a larger hexagon. This project was created with AI assistance ("vibecoding") to generate SVGs for laser cutting.
 
-**Try it out:** [Hosted version coming soon - link TBD]
+**Try it out:** [https://codystevens.studio/tools/hexagon-packer.html](https://codystevens.studio/tools/hexagon-packer.html)
 
 You can use the hosted version on my website without needing to deploy it yourself.
 
