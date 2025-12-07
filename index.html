@@ -233,8 +233,10 @@
                 }
 
                 // 2. Scan & Mask Phase (Nominal Scale)
+                // For n layers from center to edge, we need (2n - 1) tiles across the diameter
+                // This ensures density=4 gives 4 tiles center-to-edge, density=5 gives 5, etc.
                 const density = s.density;
-                const nominalScale = INTERNAL_REF / (2 * density);
+                const nominalScale = INTERNAL_REF / (2 * density - 1);
                 // FIX: Increased scan range to ensure coverage at high densities
                 const scanRange = Math.ceil(density * 3) + 5; 
                 const cluster = []; 
@@ -419,7 +421,7 @@
             }
 
             draw(canvas, ctx) {
-                const canvasSize = 800;
+                const canvasSize = 600;
                 if (canvas.width !== canvasSize) { canvas.width = canvasSize; canvas.height = canvasSize; }
                 ctx.clearRect(0, 0, canvasSize, canvasSize);
 
