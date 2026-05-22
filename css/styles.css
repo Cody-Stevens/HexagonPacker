@@ -1,0 +1,64 @@
+/* ==============================================
+   HEXAGON PACKER - STYLES
+   ============================================== */
+
+/* Base */
+body {
+    font-family: 'Inter', sans-serif;
+}
+
+/* Canvas shadow */
+canvas {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 
+                0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Toggle Switch Styles */
+.toggle-checkbox:checked {
+    right: 0;
+    border-color: #2dd4bf;
+}
+
+.toggle-checkbox:checked + .toggle-label {
+    background-color: #2dd4bf;
+}
+
+/* Background grid pattern for canvas container */
+.canvas-grid-pattern {
+    background-image: radial-gradient(#4fd1c5 1px, transparent 1px);
+    background-size: 20px 20px;
+}
+
+/* Number input styling - hide default spinners */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+/* Inline editable value inputs */
+.inline-value-input {
+    width: 4rem;
+    text-align: right;
+    font-size: 0.75rem;
+    color: #2dd4bf;
+    font-family: ui-monospace, monospace;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid #475569;
+    outline: none;
+    padding: 0 0.25rem;
+}
+
+.inline-value-input:focus {
+    border-bottom-color: #14b8a6;
+}
+
+.inline-value-input:hover {
+    border-bottom-color: #5eead4;
+}
