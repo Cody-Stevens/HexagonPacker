@@ -26,7 +26,22 @@ export function isPointInPolygon(p, polygon) {
 }
 
 /**
- * Check if all vertices of a hexagon are inside a parent polygon
+ * Check if two line segments properly cross (intersect at a single interior point)
+ * @param {Object} a - Segment 1 start {x, y}
+ * @param {Object} b - Segment 1 end {x, y}
+ * @param {Object} c - Segment 2 start {x, y}
+ * @param {Object} d - Segment 2 end {x, y}
+ * @returns {boolean}
+ */
+function segmentsCross(a, b, c, d) {
+    const orient = (p, q, r) => (q.x - p.x) * (r.y - p.y) - (q.y - p.y) * (r.x - p.x);
+    return orient(a, b, c) * orient(a, b, d) < 0 && orient(c, d, a) * orient(c, d, b) < 0;
+}
+
+/**
+ * Check if a hexagon lies entirely inside a parent polygon
+ * All vertices must be inside, no outline edge may cross a hexagon edge,
+ * and no outline vertex may lie inside the hexagon (matters for concave parents)
  * Uses a small epsilon inset to avoid floating-point boundary issues
  * @param {number} cx - Center X
  * @param {number} cy - Center Y
@@ -39,13 +54,28 @@ export function isPointInPolygon(p, polygon) {
 export function isHexagonInsideShape(cx, cy, hexRadius, angleOffset, parentPolygon, epsilon = EPSILON) {
     // Use slightly larger radius for containment check to ensure margin
     const checkRadius = hexRadius + epsilon;
-    
+    const hex = [];
+
     for (let i = 0; i < 6; i++) {
         const angle = i * Math.PI / 3 + angleOffset;
         const vx = cx + Math.cos(angle) * checkRadius;
         const vy = cy + Math.sin(angle) * checkRadius;
         if (!isPointInPolygon({ x: vx, y: vy }, parentPolygon)) {
             return false;
+        }
+        hex.push({ x: vx, y: vy });
+    }
+
+    // Vertices alone are not enough on concave parents: a reflex outline
+    // vertex can poke in between two hexagon vertices
+    for (const p of parentPolygon) {
+        if (isPointInPolygon(p, hex)) return false;
+    }
+    for (let i = 0; i < 6; i++) {
+        const a = hex[i], b = hex[(i + 1) % 6];
+        for (let j = 0; j < parentPolygon.length; j++) {
+            const c = parentPolygon[j], d = parentPolygon[(j + 1) % parentPolygon.length];
+            if (segmentsCross(a, b, c, d)) return false;
         }
     }
     return true;
